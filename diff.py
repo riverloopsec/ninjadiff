@@ -10,15 +10,23 @@ import os
 import sys
 import math
 import networkx as nx
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 import hashashin
 
 Binary_View = binja.binaryview.BinaryView
 
 
-def diff(dst_path: str, pairings: List[nx.DiGraph]) -> None:
-    dst_bv = binja.BinaryViewType.get_view_of_file(dst_path)
+def diff(src_bv: Binary_View, dst_bv: Binary_View) -> Dict[str, str]:
+    functions = []
+    # TODO: exclude thunks/etc.
+    for function in src_bv.functions:
+        # ignore small functions to minimize false positives
+        if len(function.basic_blocks) < 5:
+            continue
+
+        hash_cfg = function_graph(src_bv, function.hlil)
+        functions.append(hash_cfg)
 
     mismatched_tt = dst_bv.create_tag_type('Difference', '🚫')
     new_function_tt = dst_bv.create_tag_type('New function', '➕')
@@ -31,7 +39,7 @@ def diff(dst_path: str, pairings: List[nx.DiGraph]) -> None:
             continue
 
         hash_cfg = function_graph(dst_bv, function.hlil)
-        min_pairing, distance = get_min_pair(hash_cfg, pairings)
+        min_pairing, distance = get_min_pair(hash_cfg, functions)
 
         # if pairing failed, the function must be new to this binary
         if min_pairing is None:
@@ -72,15 +80,6 @@ def diff(dst_path: str, pairings: List[nx.DiGraph]) -> None:
                         instr.address,
                         binja.highlight.HighlightStandardColor.RedHighlightColor
                     )
-
-    output_bndb = os.path.join(os.getcwd(), dst_path + '.bndb')
-    print("Writing output Binary Ninja database at {}".format(output_bndb))
-    if not os.path.isfile(output_bndb):
-        print('writing view to database...')
-        dst_bv.create_database(output_bndb)
-    else:
-        print('updating database...')
-        dst_bv.save(output_bndb)
 
 
 def get_min_pair(function: nx.DiGraph, pairings: List[nx.DiGraph]) -> Tuple[nx.DiGraph, float]:
@@ -136,33 +135,3 @@ def function_graph(bv: binja.binaryview.BinaryView, function: binja.highlevelil.
             graph.add_edge(bb_hash, target_hash)
 
     return graph
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Identify differences between two binaries')
-    parser.add_argument('src', type=str,
-                        help='Source binary (or bndb)')
-    parser.add_argument('dst', type=str,
-                        help='Destination binary (or bndb)')
-    args = parser.parse_args()
-
-    if not (os.path.isfile(args.src) and os.path.isfile(args.dst)):
-        print("Must provide valid path to binary or bndb")
-        sys.exit(-1)
-
-    # compute function and basic block hashes for the source binary
-    bv = binja.BinaryViewType.get_view_of_file(args.src)
-    functions = []
-
-    print('Ingesting {}...'.format(args.src))
-    # TODO: exclude thunks/etc.
-    for function in bv.functions:
-        # ignore small functions to avoid false positives
-        if len(function.basic_blocks) < 5:
-            continue
-
-        hash_cfg = function_graph(bv, function.hlil)
-        functions.append(hash_cfg)
-
-    print('Starting diffing...')
-    diff(args.dst, functions)
