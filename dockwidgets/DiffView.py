@@ -1,18 +1,13 @@
-from PySide2 import QtCore
-from PySide2.QtCore import Qt, QAbstractItemModel, QModelIndex, QSize, QTimer
-from PySide2.QtGui import QPalette, QFontMetricsF
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QWidget, QStyle, QSplitter, QLabel
+from PySide2.QtCore import Qt, QTimer
+from PySide2.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLabel
 
 import re
-import threading
 
 import binaryninjaui
-from binaryninja import BinaryView, PythonScriptingInstance, InstructionTextToken, InstructionTextTokenType, DisassemblyTextLine, LinearDisassemblyLine, LinearDisassemblyLineType, HighlightStandardColor, core_version, interaction, BinaryViewType, AnalysisState
-from binaryninja.enums import InstructionTextTokenType
-from binaryninjaui import View, ViewType, UIAction, UIActionHandler, LinearView, DisassemblyContainer, ViewFrame, DockHandler, TokenizedTextView, HistoryEntry
+from binaryninja import BinaryView, core_version, interaction, BinaryViewType
+from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView
 
-from . import widget, ControlsWidget
-from .. import binjaplug
+from . import ControlsWidget
 
 (major, minor, buildid) = re.match(r'^(\d+)\.(\d+)\.?(\d+)?', core_version()).groups()
 major = int(major)

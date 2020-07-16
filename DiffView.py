@@ -1,4 +1,5 @@
-from . import ui
+import ui
+
 
 class DiffView:
     def __init__(self):

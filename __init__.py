@@ -1,5 +1,3 @@
-import binaryninja
-from .binjadiff import DiffView
-from binaryninja.plugin import BackgroundTask
+import DiffView
 
 dv = DiffView.DiffView()

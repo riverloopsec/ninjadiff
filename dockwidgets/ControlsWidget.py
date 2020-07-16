@@ -1,16 +1,10 @@
 from PySide2 import QtCore, QtGui
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QLabel, QWidget, QPushButton, QLineEdit, QToolBar, QToolButton, QMenu, QAction
-from binaryninja import execute_on_main_thread_and_wait, BinaryView
-from binaryninja.interaction import show_message_box, MessageBoxIcon, MessageBoxButtonSet, MessageBoxButtonResult
-from binaryninjaui import ViewFrame
-import platform
-import threading
-import traceback
-import sys
+from PySide2.QtWidgets import QLineEdit, QToolBar, QMenu, QAction
+from binaryninja import BinaryView
 import os
 
-from .. import binjaplug
+import binjaplug
+
 
 def load_icon(fname_icon):
 	path_this_file = os.path.abspath(__file__)

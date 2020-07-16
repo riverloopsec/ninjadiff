@@ -10,9 +10,9 @@ import os
 import sys
 import math
 import networkx as nx
-from typing import Dict, Tuple, List
+from typing import Tuple, List
 
-from .hashashin.src.utils.lsh import brittle_hash, hash_function
+import hashashin
 
 Binary_View = binja.binaryview.BinaryView
 
@@ -52,7 +52,7 @@ def diff(dst_path: str, pairings: List[nx.DiGraph]) -> None:
 
         for bb in function.hlil.basic_blocks:
             # TODO: optmize to avoid second hashing
-            bb_hash = brittle_hash(dst_bv, bb)
+            bb_hash = hashashin.brittle_hash(dst_bv, bb)
 
             # basic block matches a block in the source
             if min_pairing.has_node(bb_hash):
@@ -124,7 +124,7 @@ def function_graph(bv: binja.binaryview.BinaryView, function: binja.highlevelil.
 
     bbs = {}
     for bb in function:
-        bb_hash = brittle_hash(bv, bb)
+        bb_hash = hashashin.brittle_hash(bv, bb)
         graph.add_node(bb_hash)
         bbs[bb] = bb_hash
 
