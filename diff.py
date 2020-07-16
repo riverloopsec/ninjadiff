@@ -23,6 +23,7 @@ class BackgroundDiffer(binja.plugin.BackgroundTask):
         self.dst_bv = dst_bv
 
     def run(self):
+        print('started diffing...')
         functions = []
         # TODO: exclude thunks/etc.
         for function in self.src_bv.functions:
