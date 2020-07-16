@@ -1,4 +1,4 @@
-import ui
+from . import ui
 
 
 class DiffView:

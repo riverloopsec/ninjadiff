@@ -3,7 +3,7 @@ from PySide2.QtWidgets import QLineEdit, QToolBar, QMenu, QAction
 from binaryninja import BinaryView
 import os
 
-import binjaplug
+from .. import binjaplug
 
 
 def load_icon(fname_icon):

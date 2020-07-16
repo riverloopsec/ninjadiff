@@ -4,10 +4,11 @@ from PySide2.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLa
 import re
 
 import binaryninjaui
-from binaryninja import BinaryView, core_version, interaction, BinaryViewType
+from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin
 from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView
 
 from . import ControlsWidget
+from .. import diff
 
 (major, minor, buildid) = re.match(r'^(\d+)\.(\d+)\.?(\d+)?', core_version()).groups()
 major = int(major)
@@ -27,6 +28,9 @@ class DiffView(QWidget, View):
 		# open secondary file and begin non-blocking analysis
 		self.dst_bv = BinaryViewType.get_view_of_file(fname, update_analysis=False)
 		self.dst_bv.update_analysis()
+
+		# begin diffing process in background thread
+		diff.BackgroundDiffer(self.src_bv, self.dst_bv)
 
 
 		QWidget.__init__(self, parent)
@@ -159,7 +163,6 @@ class DiffView(QWidget, View):
 			return False
 		else:
 			return True
-
 
 
 class DiffViewType(ViewType):
