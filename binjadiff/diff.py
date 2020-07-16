@@ -12,7 +12,7 @@ import math
 import networkx as nx
 from typing import Dict, Tuple, List
 
-from utils.lsh import brittle_hash, hash_function
+from .hashashin.src.utils.lsh import brittle_hash, hash_function
 
 Binary_View = binja.binaryview.BinaryView
 
