@@ -1,4 +1,4 @@
-# Copyright 2019 River Loop Security LLC, All Rights Reserved
+8# Copyright 2019 River Loop Security LLC, All Rights Reserved
 # Author Rylan O'Connell
 
 import binaryninja as binja
