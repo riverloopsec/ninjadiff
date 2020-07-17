@@ -129,6 +129,9 @@ class DiffView(QWidget, View):
 		self.update_timer.setSingleShot(False)
 		self.update_timer.timeout.connect(lambda: self.updateTimerEvent())
 
+	def navigate(self, addr):
+		return self.src_editor.navigate(addr)
+
 	def getData(self):
 		return self.src_bv
 
