@@ -31,7 +31,7 @@ class DiffView(QWidget, View):
 
 		# begin diffing process in background thread
 		differ = diff.BackgroundDiffer(self.src_bv, self.dst_bv)
-		differ.run()
+		differ.start()
 
 
 		QWidget.__init__(self, parent)

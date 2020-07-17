@@ -16,9 +16,9 @@ from . import hashashin
 Binary_View = binja.binaryview.BinaryView
 
 
-class BackgroundDiffer(binja.plugin.BackgroundTask):
+class BackgroundDiffer(binja.BackgroundTaskThread):
     def __init__(self, src_bv: Binary_View, dst_bv: Binary_View):
-        binja.plugin.BackgroundTaskThread.__init__(self, 'Diffing...', True)
+        binja.BackgroundTaskThread.__init__(self, 'Diffing...', True)
         self.src_bv = src_bv
         self.dst_bv = dst_bv
 
