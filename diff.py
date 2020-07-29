@@ -12,6 +12,7 @@ import math
 from typing import Tuple, List, Dict
 
 from . import hashashin
+from . import functionTypes
 
 Binary_View = binja.binaryview.BinaryView
 
@@ -32,7 +33,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                 continue
 
             hash_cfg = self.function_graph(self.dst_bv, function.hlil)
-            functions[hash_cfg] = function.hlil
+            functions[hash_cfg] = function
 
         dst_mismatched_tt = self.dst_bv.create_tag_type('Difference', '🚫')
         src_mismatched_tt = self.src_bv.create_tag_type('Difference', '🚫')
@@ -54,7 +55,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                 tag = function.create_tag(new_function_tt, 'New function')
                 function.add_user_address_tag(function.start, tag)
 
-                for bb in function.hlil:
+                for bb in function.hlil_if_available:
                     for instr in bb:
                         function.set_user_instr_highlight(
                             instr.address,
@@ -78,6 +79,16 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                             binja.highlight.HighlightStandardColor.GreenHighlightColor
                         )
 
+                    # TODO: store bb info instead of having to recompute
+                    dst_func = functions[min_pairing]
+                    for dst_bb in dst_func.hlil_if_available.basic_blocks:
+                        if bb_hash == hashashin.brittle_hash(self.dst_bv, dst_bb):
+                            for instr in dst_bb:
+                                dst_func.set_user_instr_highlight(
+                                    instr.address,
+                                    binja.highlight.HighlightStandardColor.GreenHighlightColor
+                                )
+
                 # basic block differs, but function is similar
                 else:
                     print('tagging mismatch at {}...'.format(hex(bb.start + function.start)))
@@ -88,6 +99,17 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                             instr.address,
                             binja.highlight.HighlightStandardColor.RedHighlightColor
                         )
+                    # TODO: figure out this logic
+                    '''
+                    dst_func = functions[min_pairing]
+                    for dst_bb in dst_func.basic_blocks:
+                        if bb_hash == hashashin.brittle_hash(self.dst_bv, dst_bb):
+                            for instr in dst_bb:
+                                dst_func.set_user_instr_highlight(
+                                    instr.address,
+                                    binja.highlight.HighlightStandardColor.GreenHighlightColor
+                                )
+                    '''
 
     def get_min_pair(self, function, pairings) -> Tuple[binja.function.Function, float]:
         min_distance = math.inf
@@ -106,10 +128,10 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
     def function_difference(self, f1, f2) -> float:
         distance = 0.0
 
-        for block in f1.nodes:
+        for block in f1.basic_blocks:
             if not f2.has_node(block):
                 distance += 1
-        for block in f2.nodes:
+        for block in f2.basic_blocks:
             if not f1.has_node(block):
                 distance += 1
 
@@ -121,56 +143,3 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                 distance += 0.1
 
         return distance
-
-
-    def function_graph(self, bv: binja.binaryview.BinaryView, function: binja.highlevelil.HighLevelILFunction):
-        graph = Graph()
-        graph.name = function.source_function.name
-
-        bbs = {}
-        for bb in function:
-            bb_hash = hashashin.brittle_hash(bv, bb)
-            graph.add_node(bb_hash)
-            bbs[bb] = bb_hash
-
-        for bb in function:
-            bb_hash = bbs[bb]
-            outgoing = bb.outgoing_edges
-            for edge in outgoing:
-                target_hash = bbs[edge.target]
-                graph.add_edge(bb_hash, target_hash)
-
-        return graph
-
-
-# minimal graph class to avoid dependency on networkx
-class Graph:
-    def __init__(self):
-        self.nodes = []
-        self.edges = {}
-        self.name = ''
-
-    def add_node(self, node):
-        self.nodes.append(node)
-
-    def add_edge(self, u, v):
-        if u in self.edges.keys():
-            self.edges[u].append(v)
-        else:
-            self.edges[u] = [v]
-
-    def has_node(self, node):
-        return node in self.nodes
-
-    def has_edge(self, u, v):
-        if u in self.edges.keys():
-            for child in self.edges[u]:
-                if child == v:
-                    return True
-        return False
-
-    def number_of_nodes(self):
-        return len(self.nodes)
-
-    def number_of_edges(self):
-        return len(self.edges.values())
