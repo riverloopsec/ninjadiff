@@ -125,21 +125,4 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
         return min_pairing, min_distance
 
-    def function_difference(self, f1, f2) -> float:
-        distance = 0.0
 
-        for block in f1.basic_blocks:
-            if not f2.has_node(block):
-                distance += 1
-        for block in f2.basic_blocks:
-            if not f1.has_node(block):
-                distance += 1
-
-        for edge in f1.edges:
-            if not f2.has_edge(edge[0], edge[1]):
-                distance += 0.1
-        for edge in f2.edges:
-            if not f1.has_edge(edge[0], edge[1]):
-                distance += 0.1
-
-        return distance

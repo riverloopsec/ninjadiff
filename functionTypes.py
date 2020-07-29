@@ -69,6 +69,25 @@ class Function:
     def number_of_edges(self):
         return len(self.edges.values())
 
+    def function_difference(self, other: Function) -> float:
+        distance = 0.0
+
+        for block in self.basic_blocks:
+            if not other.has_node(block):
+                distance += 1
+        for block in other.basic_blocks:
+            if not self.has_node(block):
+                distance += 1
+
+        for edge in self.edges:
+            if not other.has_edge(edge[0], edge[1]):
+                distance += 0.1
+        for edge in other.edges:
+            if not self.has_edge(edge[0], edge[1]):
+                distance += 0.1
+
+        return distance
+
 
 
 
