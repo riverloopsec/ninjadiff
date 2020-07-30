@@ -5,17 +5,12 @@
 
 import binaryninja as binja
 
-import argparse
-import os
-import sys
 import math
 from typing import Tuple, List, Dict
 
-from . import hashashin
 from . import functionTypes
 
 Binary_View = binja.binaryview.BinaryView
-
 
 class BackgroundDiffer(binja.BackgroundTaskThread):
     def __init__(self, src_bv: Binary_View, dst_bv: Binary_View):
@@ -25,104 +20,83 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
     def run(self):
         print('started diffing...')
-        functions = {}
-        # TODO: exclude thunks/etc.
-        for function in self.dst_bv.functions:
-            # ignore small functions to minimize false positives
-            if len(function.basic_blocks) < 5:
-                continue
-
-            hash_cfg = self.function_graph(self.dst_bv, function.hlil)
-            functions[hash_cfg] = function
-
         dst_mismatched_tt = self.dst_bv.create_tag_type('Difference', '🚫')
         src_mismatched_tt = self.src_bv.create_tag_type('Difference', '🚫')
         new_function_tt = self.src_bv.create_tag_type('New function', '➕')
 
+        dst_functions = self.ingest(self.dst_bv)
+        src_functions = self.ingest(self.src_bv)
+
         # align functions for diffing
-        # TODO: exclude thunks/etc.
-        for function in self.src_bv.functions:
-            # ignore small functions to avoid false positives
-            if len(function.basic_blocks) < 5:
-                continue
+        address_map = AddressMap()
+        for src_function in src_functions:
+            min_pairing, distance = self.get_min_pair(src_function, dst_functions)
 
-            hash_cfg = self.function_graph(self.src_bv, function.hlil)
-            min_pairing, distance = self.get_min_pair(hash_cfg, functions)
-
-            # if pairing failed, the function must be new to this binary
+            # if pairing failed (ie. no similar functions in the dest binary), assume it is not present in dest
             if min_pairing is None:
-                print('No suitable function pairing for {}'.format(function.name))
-                tag = function.create_tag(new_function_tt, 'New function')
-                function.add_user_address_tag(function.start, tag)
-
-                for bb in function.hlil_if_available:
-                    for instr in bb:
-                        function.set_user_instr_highlight(
+                tag = src_function.source_function.create_tag(new_function_tt, 'No matching functions')
+                src_function.source_function.add_user_address_tag(src_function.address, tag)
+                for bb in src_function.basic_blocks:
+                    for instr in bb.source_block:
+                        src_function.source_function.set_user_instr_highlight(
                             instr.address,
                             binja.highlight.HighlightStandardColor.RedHighlightColor
                         )
                 continue
 
-            if distance > 0:
-                print('Successfully aligned {} to {} (delta: {})'.format(function.name, min_pairing.name, distance))
+            # attempt to build a mapping between addresses in the source and destination binaries
+            for src_bb in src_function.basic_blocks:
+                try:
+                    index = min_pairing.basic_blocks.index(src_bb)
+                    dst_bb = min_pairing.basic_blocks[index]
+                    address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
 
-            for bb in function.hlil.basic_blocks:
-                # TODO: optmize to avoid second hashing
-                bb_hash = hashashin.brittle_hash(self.dst_bv, bb)
+                # basic block not found in the dest binary
+                except ValueError:
+                    pass
 
-                # basic block matches a block in the source
-                if min_pairing.has_node(bb_hash):
-                    # TODO: iterate through hlil instructions in functions[min_pairing] to diff at the instruction level
-                    for instr in bb:
-                        function.set_user_instr_highlight(
-                            instr.address,
-                            binja.highlight.HighlightStandardColor.GreenHighlightColor
-                        )
-
-                    # TODO: store bb info instead of having to recompute
-                    dst_func = functions[min_pairing]
-                    for dst_bb in dst_func.hlil_if_available.basic_blocks:
-                        if bb_hash == hashashin.brittle_hash(self.dst_bv, dst_bb):
-                            for instr in dst_bb:
-                                dst_func.set_user_instr_highlight(
-                                    instr.address,
-                                    binja.highlight.HighlightStandardColor.GreenHighlightColor
-                                )
-
-                # basic block differs, but function is similar
-                else:
-                    print('tagging mismatch at {}...'.format(hex(bb.start + function.start)))
-                    tag = function.create_tag(dst_mismatched_tt, '')
-                    function.add_user_address_tag(bb.start + function.start, tag)
-                    for instr in bb:
-                        function.set_user_instr_highlight(
-                            instr.address,
-                            binja.highlight.HighlightStandardColor.RedHighlightColor
-                        )
-                    # TODO: figure out this logic
-                    '''
-                    dst_func = functions[min_pairing]
-                    for dst_bb in dst_func.basic_blocks:
-                        if bb_hash == hashashin.brittle_hash(self.dst_bv, dst_bb):
-                            for instr in dst_bb:
-                                dst_func.set_user_instr_highlight(
-                                    instr.address,
-                                    binja.highlight.HighlightStandardColor.GreenHighlightColor
-                                )
-                    '''
-
-    def get_min_pair(self, function, pairings) -> Tuple[binja.function.Function, float]:
+    def get_min_pair(self, function: functionTypes.FunctionWrapper, pairings: List[functionTypes.FunctionWrapper]) -> Tuple[functionTypes.FunctionWrapper, float]:
         min_distance = math.inf
         min_pairing = None
 
-        for pairing in pairings.keys():
-            distance = self.function_difference(function, pairing)
+        for pairing in pairings:
+            distance = function.distance(pairing)
             # only accept pairings "close" to the original (accounting for function size)
             if (distance < min_distance) and \
-                    (distance < 0.40 * (function.number_of_nodes() + .1 * function.number_of_edges())):
+                    (distance < 0.40 * (function.number_of_basic_blocks() + .1 * function.number_of_edges())):
                 min_distance = distance
                 min_pairing = pairing
 
         return min_pairing, min_distance
+
+    def ingest(self, bv: Binary_View) -> List[functionTypes.FunctionWrapper]:
+        functions = []
+        # TODO: exclude thunks/etc.
+        for function in bv.functions:
+            # ignore small functions to minimize false positives
+            if len(function.basic_blocks) < 5:
+                continue
+
+            function_with_metadata = functionTypes.FunctionWrapper(function)
+            functions.append(function_with_metadata)
+
+        return functions
+
+
+class AddressMap:
+    def __init__(self):
+        self.src_to_dst = {}
+        self.dst_to_src = {}
+
+    def add_mapping(self, src_addr, dst_addr):
+        self.src_to_dst[src_addr] = dst_addr
+        self.dst_to_src[dst_addr] = src_addr
+
+    def src2dst(self, src_addr):
+        return self.src_to_dst[src_addr]
+
+    def dst2src(self, dst_addr):
+        return self.dst_to_src[dst_addr]
+
 
 

@@ -1,35 +1,43 @@
+#!/usr/bin/env python3
+
+# Copyright 2020 River Loop Security LLC, All Rights Reserved
+# Author Rylan O'Connell
+
 from binaryninja import HighLevelILBasicBlock
 from binaryninja import Function
-from binaryninja import BinaryView
+
+from typing import List, Dict
 
 from . import hashashin
 
-class BasicBlock:
+class BasicBlockWrapper:
     def __init__(self, bb: HighLevelILBasicBlock, bb_hash: str):
-        self.address = bb.start + bb.function.start
-        self.instructions = bb.disassembly_text
-        self.hash = bb_hash
+        self.address: int = bb.start + bb.function.start
+        self.instructions: List[str] = bb.disassembly_text
+        self.hash: str = bb_hash
+        self.source_block: HighLevelILBasicBlock = bb  # TODO: inherit/initialize values from HighLevelILBasicBlock
 
     def __eq__(self, other):
         if type(self) == type(other):
             return self.hash == other.hash
         return False
 
+
 # minimal graph class to avoid dependency on networkx
-class Function:
+class FunctionWrapper:
     def __init__(self, function: Function):
-        self.basic_blocks = []
-        self.edges = {}
-        self.name = function.name
-        self.view = function.view
+        self.basic_blocks: List[BasicBlockWrapper] = []
+        self.edges: Dict[BasicBlockWrapper, BasicBlockWrapper] = {}
+        self.address: int = function.start
+        self.source_function: Function = function  # TODO: figure out a way to inherit/initialize properties from Function
 
         # create BasicBlock objects to represent all blocks in the function
         for bb in function.hlil.basic_blocks:
             self.add_basic_block(bb)
 
     def add_basic_block(self, bb: HighLevelILBasicBlock):
-        bb_hash = hashashin.brittle_hash(self.view, bb)
-        node = BasicBlock(bb, bb_hash)
+        bb_hash = hashashin.brittle_hash(self.source_function.view, bb)
+        node = BasicBlockWrapper(bb, bb_hash)
 
         # ensure we don't add a basic block if we've already "discovered" it
         if node in self.basic_blocks:
@@ -39,7 +47,7 @@ class Function:
 
         for edge in bb.outgoing_edges:
             target_block = edge.target
-            target_node = BasicBlock(target_block)
+            target_node = BasicBlockWrapper(target_block)
 
             # recursively discover child nodes
             if target_node not in self.basic_blocks:
@@ -47,16 +55,16 @@ class Function:
 
             self.add_edge(node, target_node)
 
-    def add_edge(self, u: BasicBlock, v: BasicBlock):
+    def add_edge(self, u: BasicBlockWrapper, v: BasicBlockWrapper):
         if u in self.edges.keys():
             self.edges[u].append(v)
         else:
             self.edges[u] = [v]
 
-    def has_node(self, node: BasicBlock):
+    def has_node(self, node: BasicBlockWrapper):
         return node in self.basic_blocks
 
-    def has_edge(self, u: BasicBlock, v: BasicBlock):
+    def has_edge(self, u: BasicBlockWrapper, v: BasicBlockWrapper):
         if u in self.edges.keys():
             for child in self.edges[u]:
                 if child == v:
@@ -69,7 +77,8 @@ class Function:
     def number_of_edges(self):
         return len(self.edges.values())
 
-    def function_difference(self, other: Function) -> float:
+    # TODO: experiment with similarity metrics
+    def distance(self, other) -> float:
         distance = 0.0
 
         for block in self.basic_blocks:
@@ -87,7 +96,3 @@ class Function:
                 distance += 0.1
 
         return distance
-
-
-
-
