@@ -12,6 +12,7 @@ from . import functionTypes
 
 Binary_View = binja.binaryview.BinaryView
 
+
 class BackgroundDiffer(binja.BackgroundTaskThread):
     def __init__(self, src_bv: Binary_View, dst_bv: Binary_View):
         binja.BackgroundTaskThread.__init__(self, 'Diffing...', True)
@@ -97,6 +98,3 @@ class AddressMap:
 
     def dst2src(self, dst_addr):
         return self.dst_to_src[dst_addr]
-
-
-

@@ -22,14 +22,17 @@ class BasicBlockWrapper:
             return self.hash == other.hash
         return False
 
+    def __hash__(self):
+        return int(self.hash, 16)
+
 
 # minimal graph class to avoid dependency on networkx
 class FunctionWrapper:
     def __init__(self, function: Function):
         self.basic_blocks: List[BasicBlockWrapper] = []
-        self.edges: Dict[BasicBlockWrapper, BasicBlockWrapper] = {}
+        self.edges: Dict[BasicBlockWrapper, List[BasicBlockWrapper]] = {}
         self.address: int = function.start
-        self.source_function: Function = function  # TODO: figure out a way to inherit/initialize properties from Function
+        self.source_function: Function = function  # TODO:  inherit/initialize properties from Function
 
         # create BasicBlock objects to represent all blocks in the function
         for bb in function.hlil.basic_blocks:
@@ -47,7 +50,8 @@ class FunctionWrapper:
 
         for edge in bb.outgoing_edges:
             target_block = edge.target
-            target_node = BasicBlockWrapper(target_block)
+            target_hash = hashashin.brittle_hash(self.source_function.view, target_block)
+            target_node = BasicBlockWrapper(target_block, target_hash)
 
             # recursively discover child nodes
             if target_node not in self.basic_blocks:
@@ -88,11 +92,13 @@ class FunctionWrapper:
             if not self.has_node(block):
                 distance += 1
 
-        for edge in self.edges:
-            if not other.has_edge(edge[0], edge[1]):
-                distance += 0.1
-        for edge in other.edges:
-            if not self.has_edge(edge[0], edge[1]):
-                distance += 0.1
+        for k in self.edges.keys():
+            for v in self.edges[k]:
+                if not other.has_edge(k, v):
+                    distance += 0.1
+        for k in other.edges.keys():
+            for v in other.edges[k]:
+                if not self.has_edge(k, v):
+                    distance += 0.1
 
         return distance
