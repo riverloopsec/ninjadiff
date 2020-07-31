@@ -20,21 +20,25 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
         self.dst_bv = dst_bv
 
     def run(self):
+        # ensure both views have finished processing before we continue
+        self.src_bv.update_analysis_and_wait()
+        self.dst_bv.update_analysis_and_wait()
+
         print('started diffing...')
-        dst_mismatched_tt = self.dst_bv.create_tag_type('Difference', '🚫')
-        src_mismatched_tt = self.src_bv.create_tag_type('Difference', '🚫')
+        diff_tt = self.src_bv.create_tag_type('Difference', '🚫')
         new_function_tt = self.src_bv.create_tag_type('New function', '➕')
 
         dst_functions = self.ingest(self.dst_bv)
         src_functions = self.ingest(self.src_bv)
 
-        # align functions for diffing
+        # attempt to match destination functions to source functions
         address_map = AddressMap()
         for src_function in src_functions:
             min_pairing, distance = self.get_min_pair(src_function, dst_functions)
 
             # if pairing failed (ie. no similar functions in the dest binary), assume it is not present in dest
             if min_pairing is None:
+                print('tagging new function at {}...'.format(src_function.address))
                 tag = src_function.source_function.create_tag(new_function_tt, 'No matching functions')
                 src_function.source_function.add_user_address_tag(src_function.address, tag)
                 for bb in src_function.basic_blocks:
@@ -52,9 +56,32 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                     dst_bb = min_pairing.basic_blocks[index]
                     address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
 
+                    print('matched {} to {}'.format(hex(src_bb.address), hex(dst_bb.address)))
+
+                    for instr in src_bb.source_block:
+                        src_function.source_function.set_user_instr_highlight(
+                            instr.address,
+                            binja.highlight.HighlightStandardColor.GreenHighlightColor
+                        )
+
+                    for instr in dst_bb.source_block:
+                        min_pairing.source_function.set_user_instr_highlight(
+                            instr.address,
+                            binja.highlight.HighlightStandardColor.GreenHighlightColor
+                        )
+
                 # basic block not found in the dest binary
                 except ValueError:
-                    pass
+                    print('tagging mismatch at {}...'.format(hex(src_bb.address)))
+                    tag = src_function.source_function.create_tag(diff_tt, 'Basic block differs')
+                    src_function.source_function.add_user_address_tag(src_function.address, tag)
+                    for instr in src_bb.source_block:
+                        src_function.source_function.set_user_instr_highlight(
+                            instr.address,
+                            binja.highlight.HighlightStandardColor.RedHighlightColor
+                        )
+        print('finished diffing')
+
 
     def get_min_pair(self, function: functionTypes.FunctionWrapper, pairings: List[functionTypes.FunctionWrapper]) -> Tuple[functionTypes.FunctionWrapper, float]:
         min_distance = math.inf
@@ -72,7 +99,6 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
     def ingest(self, bv: Binary_View) -> List[functionTypes.FunctionWrapper]:
         functions = []
-        # TODO: exclude thunks/etc.
         for function in bv.functions:
             # ignore small functions to minimize false positives
             if len(function.basic_blocks) < 5:
