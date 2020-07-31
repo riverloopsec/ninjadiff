@@ -56,19 +56,35 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                     dst_bb = min_pairing.basic_blocks[index]
                     address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
 
-                    print('matched {} to {}'.format(hex(src_bb.address), hex(dst_bb.address)))
+                    for index in range(len(src_bb.instructions)):
+                        src_instr = src_bb.instructions[index]
+                        dst_instr = dst_bb.instructions[index]
 
-                    for instr in src_bb.source_block:
-                        src_function.source_function.set_user_instr_highlight(
-                            instr.address,
-                            binja.highlight.HighlightStandardColor.GreenHighlightColor
-                        )
+                        if src_instr == dst_instr:
+                            src_function.source_function.set_user_instr_highlight(
+                                src_instr.address,
+                                binja.highlight.HighlightStandardColor.GreenHighlightColor
+                            )
 
-                    for instr in dst_bb.source_block:
-                        min_pairing.source_function.set_user_instr_highlight(
-                            instr.address,
-                            binja.highlight.HighlightStandardColor.GreenHighlightColor
-                        )
+                            min_pairing.source_function.set_user_instr_highlight(
+                                dst_instr.address,
+                                binja.highlight.HighlightStandardColor.GreenHighlightColor
+                            )
+
+                        else:
+                            print('tagging instruction diff at {}'.format(hex(src_instr.address)))
+                            tag = src_function.source_function.create_tag(diff_tt, 'Instruction differs')
+                            src_function.source_function.add_user_address_tag(src_instr.address, tag)
+                            src_function.source_function.set_user_instr_highlight(
+                                src_instr.address,
+                                binja.highlight.HighlightStandardColor.RedHighlightColor
+                            )
+
+                            min_pairing.source_function.set_user_instr_highlight(
+                                dst_instr.address,
+                                binja.highlight.HighlightStandardColor.RedHighlightColor
+                            )
+
 
                 # basic block not found in the dest binary
                 except ValueError:
@@ -81,7 +97,6 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                             binja.highlight.HighlightStandardColor.RedHighlightColor
                         )
         print('finished diffing')
-
 
     def get_min_pair(self, function: functionTypes.FunctionWrapper, pairings: List[functionTypes.FunctionWrapper]) -> Tuple[functionTypes.FunctionWrapper, float]:
         min_distance = math.inf

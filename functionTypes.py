@@ -4,6 +4,7 @@
 # Author Rylan O'Connell
 
 from binaryninja import HighLevelILBasicBlock
+from binaryninja import HighLevelILInstruction
 from binaryninja import Function
 
 from typing import List, Dict
@@ -13,7 +14,7 @@ from . import hashashin
 class BasicBlockWrapper:
     def __init__(self, bb: HighLevelILBasicBlock, bb_hash: str):
         self.address: int = bb.start + bb.function.start
-        self.instructions: List[str] = bb.disassembly_text
+        self.instructions: List[HighLevelILInstruction] = [instr for instr in bb]
         self.hash: str = bb_hash
         self.source_block: HighLevelILBasicBlock = bb  # TODO: inherit/initialize values from HighLevelILBasicBlock
 
