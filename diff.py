@@ -38,7 +38,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
             # if pairing failed (ie. no similar functions in the dest binary), assume it is not present in dest
             if min_pairing is None:
-                print('tagging new function at {}...'.format(src_function.address))
+                print('tagging new function at {}...'.format(hex(src_function.address)))
                 tag = src_function.source_function.create_tag(new_function_tt, 'No matching functions')
                 src_function.source_function.add_user_address_tag(src_function.address, tag)
                 for bb in src_function.basic_blocks:
@@ -88,7 +88,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
                 # basic block not found in the dest binary
                 except ValueError:
-                    print('tagging mismatch at {}...'.format(hex(src_bb.address)))
+                    print('tagging basic block diff at {}...'.format(hex(src_bb.address)))
                     tag = src_function.source_function.create_tag(diff_tt, 'Basic block differs')
                     src_function.source_function.add_user_address_tag(src_function.address, tag)
                     for instr in src_bb.source_block:
