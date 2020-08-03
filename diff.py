@@ -18,6 +18,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
         binja.BackgroundTaskThread.__init__(self, 'Diffing...', True)
         self.src_bv = src_bv
         self.dst_bv = dst_bv
+        self.address_map = AddressMap()
 
     def run(self):
         # ensure both views have finished processing before we continue
@@ -32,7 +33,6 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
         src_functions = self.ingest(self.src_bv)
 
         # attempt to match destination functions to source functions
-        address_map = AddressMap()
         for src_function in src_functions:
             min_pairing, distance = self.get_min_pair(src_function, dst_functions)
 
@@ -54,7 +54,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                 try:
                     index = min_pairing.basic_blocks.index(src_bb)
                     dst_bb = min_pairing.basic_blocks[index]
-                    address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
+                    self.address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
 
                     for index in range(len(src_bb.instructions)):
                         src_instr = src_bb.instructions[index]
@@ -135,7 +135,13 @@ class AddressMap:
         self.dst_to_src[dst_addr] = src_addr
 
     def src2dst(self, src_addr):
-        return self.src_to_dst[src_addr]
+        try:
+            return self.src_to_dst[src_addr]
+        except KeyError:
+            return None
 
     def dst2src(self, dst_addr):
-        return self.dst_to_src[dst_addr]
+        try:
+            return self.dst_to_src[dst_addr]
+        except KeyError:
+            return None

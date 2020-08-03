@@ -20,19 +20,19 @@ class DiffView(QWidget, View):
 		if not type(data) == BinaryView:
 			raise Exception('expected widget data to be a BinaryView')
 
-		self.src_bv = data
+		self.src_bv: BinaryView = data
 
 		fname = interaction.get_open_filename_input('File to Diff:').decode('utf-8')
 		print('opening {}...'.format(fname))
 
 		# open secondary file and begin non-blocking analysis
-		self.dst_bv = BinaryViewType.get_view_of_file(fname, update_analysis=False)
+		self.dst_bv: BinaryView = BinaryViewType.get_view_of_file(fname, update_analysis=False)
 		self.dst_bv.update_analysis()
 
 		# begin diffing process in background thread
 		differ = diff.BackgroundDiffer(self.src_bv, self.dst_bv)
 		differ.start()
-
+		self.address_map = differ.address_map
 
 		QWidget.__init__(self, parent)
 		self.controls = ControlsWidget.DebugControlsWidget(self, "Controls", data)
@@ -130,7 +130,16 @@ class DiffView(QWidget, View):
 		self.update_timer.timeout.connect(lambda: self.updateTimerEvent())
 
 	def navigate(self, addr):
-		return self.src_editor.navigate(addr)
+		function = self.src_bv.get_function_at(addr)
+		function_addr = None if function is None else function.start
+		if function_addr is not None:
+			print('src: {}'.format(hex(function_addr)))
+			self.src_editor.navigate(function_addr)
+
+			dst_addr = self.address_map.src2dst(function_addr)
+			if dst_addr is not None:
+				print('dst: {}'.format(hex(dst_addr)))
+				self.dst_editor.navigate(dst_addr)
 
 	def getData(self):
 		return self.src_bv

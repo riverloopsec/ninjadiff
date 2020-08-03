@@ -8,6 +8,7 @@ import binaryninjaui
 from binaryninjaui import DockContextHandler, UIActionHandler
 
 from . import widget
+from . import DiffView
 
 class DebugStackModel(QAbstractItemModel):
 	def __init__(self, parent, bv):
@@ -121,6 +122,7 @@ class DiffDestWidget(QWidget, DockContextHandler):
 
 		self.bv = data
 		self.destination_editor = None
+		self.dv = None
 
 		QWidget.__init__(self, parent)
 		DockContextHandler.__init__(self, self, name)
@@ -156,17 +158,17 @@ class DiffDestWidget(QWidget, DockContextHandler):
 		layout.addWidget(self.table)
 		self.setLayout(layout)
 
-	# TODO: lookup corresponding address from diff instead of blindly jumping to same offset
 	def notifyOffsetChanged(self, offset):
-		linear_views = self.getParentWindow().findChildren(binaryninjaui.LinearView)
+		# linear_views = self.getParentWindow().findChildren(binaryninjaui.LinearView)
+		if self.dv is None:
+			dvs = self.getParentWindow().findChildren(binaryninjaui.View)
+			for dv in dvs:
+				print(type(dv))
+				if isinstance(dv, DiffView.DiffView):
+					self.dv = dv
 
-		if self.destination_editor is None:
-			for lv in linear_views:
-				if lv.accessibleName() == 'Destination Editor':
-					self.destination_editor = lv
-
-		if self.destination_editor is not None:
-			self.destination_editor.navigate(offset)
+		if self.dv is not None:
+			self.dv.navigate(offset)
 
 	def contextMenuEvent(self, event):
 		self.m_contextMenuManager.show(self.m_menu, self.actionHandler)
