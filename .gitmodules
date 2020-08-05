@@ -1,3 +1,3 @@
 [submodule "hashashin"]
-	path = binjadiff/hashashin
+	path = hashashin
 	url = git@github.com:riverloopsec/hashashin.git
