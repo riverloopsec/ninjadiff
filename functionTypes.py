@@ -9,7 +9,7 @@ from binaryninja import Function
 
 from typing import List, Dict
 
-from . import hashashin
+from .hashashin.lsh import brittle_hash
 
 class BasicBlockWrapper:
     def __init__(self, bb: HighLevelILBasicBlock, bb_hash: str):
@@ -40,7 +40,7 @@ class FunctionWrapper:
             self.add_basic_block(bb)
 
     def add_basic_block(self, bb: HighLevelILBasicBlock):
-        bb_hash = hashashin.brittle_hash(self.source_function.view, bb)
+        bb_hash = brittle_hash(self.source_function.view, bb)
         node = BasicBlockWrapper(bb, bb_hash)
 
         # ensure we don't add a basic block if we've already "discovered" it
@@ -51,7 +51,7 @@ class FunctionWrapper:
 
         for edge in bb.outgoing_edges:
             target_block = edge.target
-            target_hash = hashashin.brittle_hash(self.source_function.view, target_block)
+            target_hash = brittle_hash(self.source_function.view, target_block)
             target_node = BasicBlockWrapper(target_block, target_hash)
 
             # recursively discover child nodes
