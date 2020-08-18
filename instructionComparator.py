@@ -17,7 +17,8 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
     elif operation == binja.HighLevelILOperation.HLIL_CALL:
       return compare_calls(src_instr, dst_instr)
 
-  elif operation == binja.HighLevelILOperation.HLIL_WHILE:
+  # ignore branch targets, comparisions should only be based on the condition
+  elif (operation == binja.HighLevelILOperation.HLIL_WHILE) or (operation == binja.HighLevelILOperation.HLIL_IF) :
       src_condition = src_instr.operands[0]
       dst_condition = dst_instr.operands[0]
       print('src_condition: {}    dst_condition: {}'.format(src_condition, dst_condition))
