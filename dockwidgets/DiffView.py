@@ -133,12 +133,10 @@ class DiffView(QWidget, View):
 		function = self.src_bv.get_function_at(addr)
 		function_addr = None if function is None else function.start
 		if function_addr is not None:
-			print('src: {}'.format(hex(function_addr)))
 			self.src_editor.navigate(function_addr)
 
 			dst_addr = self.address_map.src2dst(function_addr)
 			if dst_addr is not None:
-				print('dst: {}'.format(hex(dst_addr)))
 				self.dst_editor.navigate(dst_addr)
 
 	def getData(self):

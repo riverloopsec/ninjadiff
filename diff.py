@@ -8,7 +8,7 @@ import binaryninja as binja
 import math
 from typing import Tuple, List, Dict
 
-from . import functionTypes
+from . import functionTypes, instructionComparator
 
 Binary_View = binja.binaryview.BinaryView
 
@@ -60,7 +60,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                         src_instr = src_bb.instructions[index]
                         dst_instr = dst_bb.instructions[index]
 
-                        if src_instr == dst_instr:
+                        if instructionComparator.compare_instructions(src_instr, dst_instr):
                             src_function.source_function.set_user_instr_highlight(
                                 src_instr.address,
                                 binja.highlight.HighlightStandardColor.GreenHighlightColor
@@ -72,6 +72,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                             )
 
                         else:
+                            print('{} != {}'.format(src_instr, dst_instr))
                             print('tagging instruction diff at {}'.format(hex(src_instr.address)))
                             tag = src_function.source_function.create_tag(diff_tt, 'Instruction differs')
                             src_function.source_function.add_user_address_tag(src_instr.address, tag)
