@@ -21,7 +21,22 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
   elif (operation == binja.HighLevelILOperation.HLIL_WHILE) or (operation == binja.HighLevelILOperation.HLIL_IF):
       src_condition = src_instr.operands[0]
       dst_condition = dst_instr.operands[0]
-      return src_condition == dst_condition
+
+      if len(src_condition.operands) != len(dst_condition.operands):
+        return False
+
+      for i in range(len(src_condition.operands)):
+        src_operand = src_condition.operands[i]
+        dst_operand = dst_condition.operands[i]
+
+        if (src_operand.operation == binja.HighLevelILOperation.HLIL_STRUCT_FIELD or
+                src_operand.operation == binja.HighLevelILOperation.HLIL_VAR) and \
+          (dst_operand.operation == binja.HighLevelILOperation.HLIL_STRUCT_FIELD or
+           dst_operand.operation == binja.HighLevelILOperation.HLIL_VAR):
+          continue
+        if src_operand != dst_operand:
+          return False
+      return True
 
   # probably nothing address specific
   return src_instr == dst_instr
@@ -40,6 +55,11 @@ def compare_calls(src_instr: binja.HighLevelILInstruction, dst_instr: binja.High
     dst_arg = dst_args[i]
     if src_arg.operation != dst_arg.operation:
       return False
+
+    # auto generated variable names may not match
+    if (src_arg.operation == binja.HighLevelILOperation.HLIL_VAR) or \
+            (src_arg.operation == binja.HighLevelILOperation.HLIL_STRUCT_FIELD):
+      pass
 
     # ignore contant pointers, as their addresses will vary
     if src_arg.operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
