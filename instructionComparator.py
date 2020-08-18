@@ -18,18 +18,15 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
       return compare_calls(src_instr, dst_instr)
 
   # ignore branch targets, comparisions should only be based on the condition
-  elif (operation == binja.HighLevelILOperation.HLIL_WHILE) or (operation == binja.HighLevelILOperation.HLIL_IF) :
+  elif (operation == binja.HighLevelILOperation.HLIL_WHILE) or (operation == binja.HighLevelILOperation.HLIL_IF):
       src_condition = src_instr.operands[0]
       dst_condition = dst_instr.operands[0]
-      print('src_condition: {}    dst_condition: {}'.format(src_condition, dst_condition))
       return src_condition == dst_condition
 
   # probably nothing address specific
   return src_instr == dst_instr
 
 def compare_calls(src_instr: binja.HighLevelILInstruction, dst_instr: binja.HighLevelILInstruction) -> bool:
-  print('src: {}'.format(src_instr))
-  print('dst: {}'.format(dst_instr))
   src_function = src_instr.operands[0]
   dst_function = dst_instr.operands[0]
   # TODO: verify the function being called is the same
@@ -46,6 +43,17 @@ def compare_calls(src_instr: binja.HighLevelILInstruction, dst_instr: binja.High
 
     # ignore contant pointers, as their addresses will vary
     if src_arg.operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
+      # check if the pointer is a string, and if so compare string values between instructions
+      src_bv = src_instr.il_basic_block.view
+      dst_bv = dst_instr.il_basic_block.view
+      src_string_at = src_bv.get_ascii_string_at(src_bv.start + src_arg.value.value)
+      dst_string_at = dst_bv.get_ascii_string_at(dst_bv.start + dst_arg.value.value)
+      print(src_string_at)
+      print(dst_string_at)
+
+      if (src_string_at is not None) and (dst_string_at is not None):
+        return src_string_at.value == dst_string_at.value
+      # ignore pointers which don't point to non primitive objects
       continue
 
     return src_arg == dst_arg
