@@ -12,9 +12,16 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
   if (operation == binja.HighLevelILOperation.HLIL_ASSIGN) or (operation == binja.HighLevelILOperation.HLIL_VAR_INIT):
     src_var, src_val = src_instr.operands
     dst_var, dst_val = dst_instr.operands
-    if (src_var.type != dst_var.type) or (src_val.operation != dst_val.operation):
+
+    if (src_var.operation != dst_var.operation) or (src_val.operation != dst_val.operation):
       return False
 
+    if src_var.operation == binja.HighLevelILOperation.HLIL_VAR:
+      src_var_type = src_var.operands[0].type
+      dst_var_type = dst_var.operands[0].type
+      if src_var_type != dst_var_type:
+        return False
+      
     elif operation == binja.HighLevelILOperation.HLIL_CALL:
       return compare_calls(src_instr, dst_instr)
 
