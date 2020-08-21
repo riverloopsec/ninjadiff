@@ -12,14 +12,13 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
   if (operation == binja.HighLevelILOperation.HLIL_ASSIGN) or (operation == binja.HighLevelILOperation.HLIL_VAR_INIT):
     src_var, src_val = src_instr.operands
     dst_var, dst_val = dst_instr.operands
-    if (type(src_var) != type(dst_var)) or (src_val.operation != dst_val.operation):
+    if (src_var.type != dst_var.type) or (src_val.operation != dst_val.operation):
       return False
-
-    # TODO: compare src/dst_var.type
 
     elif operation == binja.HighLevelILOperation.HLIL_CALL:
       return compare_calls(src_instr, dst_instr)
 
+    # TODO: check other arithemetic operations (ie. DIV, MOD, etc.)
     if (operation == binja.HighLevelILOperation.HLIL_ADD) or \
             (operation == binja.HighLevelILOperation.HLIL_SUB) or \
             (operation == binja.HighLevelILOperation.HLIL_MUL):
@@ -57,9 +56,6 @@ def compare_arithmetic(src_instr: binja.HighLevelILInstruction, dst_instr: binja
   print('arethmitic')
   print(src_instr)
   print(dst_instr)
-  if src_instr.operation != dst_instr.operation:
-    return False
-  # TODO: check other arithemetic operations (ie. DIV, MOD, etc.)
   num1_src, num2_src = src_instr.operands
   num1_dst, num2_dst = dst_instr.operands
 
@@ -78,7 +74,7 @@ def compare_arithmetic(src_instr: binja.HighLevelILInstruction, dst_instr: binja
     val2 = num2_dst.constant
     if val1 != val2:
       return False
-
+  return True
   # TODO: check for derefrencing pointers
 
 
