@@ -13,15 +13,20 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
     src_var, src_val = src_instr.operands
     dst_var, dst_val = dst_instr.operands
 
-    if (src_var.operation != dst_var.operation) or (src_val.operation != dst_val.operation):
+    # left hand side of assignment operation can be variable, field, etc.
+    if type(src_var) == type(dst_var):
+      if type(src_var) == binja.Variable:
+        if src_var.type != dst_var.type:
+          return False
+      elif type(src_var) == binja.highlevelil.HighLevelILInstruction:
+        if src_var.operation != dst_var.operation:
+          return False
+    else:
       return False
 
-    if src_var.operation == binja.HighLevelILOperation.HLIL_VAR:
-      src_var_type = src_var.operands[0].type
-      dst_var_type = dst_var.operands[0].type
-      if src_var_type != dst_var_type:
-        return False
-      
+    if src_val.operation != dst_val.operation:
+      return False
+
     elif operation == binja.HighLevelILOperation.HLIL_CALL:
       return compare_calls(src_instr, dst_instr)
 
