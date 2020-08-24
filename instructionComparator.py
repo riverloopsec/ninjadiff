@@ -63,9 +63,28 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
   # probably nothing address specific
   return src_instr == dst_instr
 
+def compare_derefs(src_instr: binja.HighLevelILInstruction, dst_instr: binja.HighLevelILInstruction) -> bool:
+  src_pointer = src_instr.src
+  dst_pointer = dst_instr.src
+  if src_pointer.operation != dst_pointer.operation:
+    return False
+
+  operation = src_pointer.operation
+  # TODO: extract strings/constants
+  if operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
+    pass
+  elif operation == binja.HighLevelILOperation.HLIL_VAR:
+    return src_pointer.var.type == dst_pointer.var.type
+  elif (operation == binja.HighLevelILOperation.HLIL_ADD) or \
+    (operation == binja.HighLevelILOperation.HLIL_SUB) or \
+    (operation == binja.HighLevelILOperation.HLIL_MUL):
+    return compare_arithmetic(src_pointer, dst_pointer)
+
+  else:
+    print('[!] unexpected pointer type {} at {}'.format(operation, hex(src_instr.address)))
+    return False
 
 def compare_arithmetic(src_instr: binja.HighLevelILInstruction, dst_instr: binja.HighLevelILInstruction) -> bool:
-  print('arethmitic')
   print(src_instr)
   print(dst_instr)
   num1_src, num2_src = src_instr.operands
