@@ -36,8 +36,6 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
             (operation == binja.HighLevelILOperation.HLIL_MUL):
       return compare_arithmetic(src_instr, dst_instr)
 
-    # TODO: handle derefrencing pointers
-
   # ignore branch targets, comparisions should only be based on the condition
   elif (operation == binja.HighLevelILOperation.HLIL_WHILE) or (operation == binja.HighLevelILOperation.HLIL_IF):
     src_condition = src_instr.operands[0]
@@ -62,6 +60,7 @@ def compare_instructions(src_instr: binja.HighLevelILInstruction, dst_instr: bin
 
   # probably nothing address specific
   return src_instr == dst_instr
+
 
 def compare_derefs(src_instr: binja.HighLevelILInstruction, dst_instr: binja.HighLevelILInstruction) -> bool:
   src_pointer = src_instr.src
@@ -94,19 +93,25 @@ def compare_arithmetic(src_instr: binja.HighLevelILInstruction, dst_instr: binja
     return False
 
   # TODO: check for floats as well
+  # extract numeric constants
   if num1_src.operation == binja.HighLevelILOperation.HLIL_CONST:
     val1 = num1_src.constant
     val2 = num2_src.constant
     if val1 != val2:
       return False
-
   if num1_dst.operation == binja.HighLevelILOperation.HLIL_CONST:
     val1 = num1_dst.constant
     val2 = num2_dst.constant
     if val1 != val2:
       return False
+
+  # compare variable refrences
+  if num1_src.operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
+    return compare_derefs(src_instr, dst_instr)
+  if num1_dst.operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
+    return compare_derefs(src_instr, dst_instr)
+
   return True
-  # TODO: check for derefrencing pointers
 
 
 def compare_calls(src_instr: binja.HighLevelILInstruction, dst_instr: binja.HighLevelILInstruction) -> bool:
@@ -121,29 +126,27 @@ def compare_calls(src_instr: binja.HighLevelILInstruction, dst_instr: binja.High
   for i in range(len(src_args)):
     src_arg = src_args[i]
     dst_arg = dst_args[i]
-    if (type(src_arg) != binja.HighLevelILInstruction) or (type(dst_arg) != binja.HighLevelILInstruction):
-      continue
-    if src_arg.operation != dst_arg.operation:
-      return False
+    if (type(src_arg) == binja.HighLevelILInstruction) and (type(dst_arg) == binja.HighLevelILInstruction):
+      if src_arg.operation != dst_arg.operation:
+       return False
 
-    # auto generated variable names may not match
-    if (src_arg.operation == binja.HighLevelILOperation.HLIL_VAR) or \
-            (src_arg.operation == binja.HighLevelILOperation.HLIL_STRUCT_FIELD):
-      continue
+      # ignore contant pointers, as their addresses will vary
+      if src_arg.operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
+        # check if the pointer is a string, and if so compare string values between instructions
+        src_bv = src_instr.il_basic_block.view
+        dst_bv = dst_instr.il_basic_block.view
+        src_string_at = src_bv.get_ascii_string_at(src_bv.start + src_arg.value.value)
+        dst_string_at = dst_bv.get_ascii_string_at(dst_bv.start + dst_arg.value.value)
+        if (src_string_at is not None) and (dst_string_at is not None):
+          if src_string_at.value != dst_string_at.value:
+            return False
 
-    # ignore contant pointers, as their addresses will vary
-    if src_arg.operation == binja.HighLevelILOperation.HLIL_CONST_PTR:
-      # check if the pointer is a string, and if so compare string values between instructions
-      src_bv = src_instr.il_basic_block.view
-      dst_bv = dst_instr.il_basic_block.view
-      src_string_at = src_bv.get_ascii_string_at(src_bv.start + src_arg.value.value)
-      dst_string_at = dst_bv.get_ascii_string_at(dst_bv.start + dst_arg.value.value)
-      print(src_string_at)
-      print(dst_string_at)
-      if (src_string_at is not None) and (dst_string_at is not None):
-        return src_string_at.value == dst_string_at.value
+      elif src_arg.operation == binja.HighLevelILOperation.HLIL_CONST:
+          if src_arg.value != dst_arg.value:
+            return False
 
-      # ignore pointers which point to non primitive data types
-      continue
+    elif (type(src_arg) == binja.Variable) and (type(dst_arg) == binja.Variable):
+       if src_arg.type != dst_arg.type:
+        return False
 
-    return src_arg == dst_arg
+  return True
