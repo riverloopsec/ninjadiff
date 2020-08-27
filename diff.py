@@ -56,9 +56,9 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
             for instr_index in range(min(len(src_instrs), len(dst_instrs))):
                 src_instr = src_instrs[instr_index]
                 dst_instr = dst_instrs[instr_index]
-                # self.address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
 
                 if instructionComparator.compare_instructions(src_instr, dst_instr):
+                    self.address_map.add_mapping(src_addr=src_instr.address, dst_addr=dst_instr.address)
                     src_function.source_function.set_user_instr_highlight(
                         src_instr.address,
                         binja.highlight.HighlightStandardColor.GreenHighlightColor
