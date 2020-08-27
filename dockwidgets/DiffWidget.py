@@ -163,7 +163,6 @@ class DiffDestWidget(QWidget, DockContextHandler):
 		if self.dv is None:
 			dvs = self.getParentWindow().findChildren(binaryninjaui.View)
 			for dv in dvs:
-				print(type(dv))
 				if isinstance(dv, DiffView.DiffView):
 					self.dv = dv
 

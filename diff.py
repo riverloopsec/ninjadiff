@@ -8,7 +8,7 @@ import binaryninja as binja
 import math
 from typing import Tuple, List, Dict
 
-from . import functionTypes
+from . import functionTypes, instructionComparator
 
 Binary_View = binja.binaryview.BinaryView
 
@@ -34,6 +34,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
         # attempt to match destination functions to source functions
         for src_function in src_functions:
+            print('diffing {}'.format(src_function.source_function.name))
             min_pairing, distance = self.get_min_pair(src_function, dst_functions)
 
             # if pairing failed (ie. no similar functions in the dest binary), assume it is not present in dest
@@ -50,52 +51,40 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                 continue
 
             # attempt to build a mapping between addresses in the source and destination binaries
-            for src_bb in src_function.basic_blocks:
-                try:
-                    index = min_pairing.basic_blocks.index(src_bb)
-                    dst_bb = min_pairing.basic_blocks[index]
-                    self.address_map.add_mapping(src_addr=src_bb.address, dst_addr=dst_bb.address)
+            self.address_map.add_mapping(src_addr=src_function.address, dst_addr=min_pairing.address)
+            print('{} -> {}'.format(hex(src_function.address), hex(min_pairing.address)))
+            src_instrs = list(src_function.source_function.hlil.instructions)
+            dst_instrs = list(min_pairing.source_function.hlil.instructions)
+            for instr_index in range(min(len(src_instrs), len(dst_instrs))):
+                src_instr = src_instrs[instr_index]
+                dst_instr = dst_instrs[instr_index]
 
-                    for index in range(len(src_bb.instructions)):
-                        src_instr = src_bb.instructions[index]
-                        dst_instr = dst_bb.instructions[index]
+                if instructionComparator.compare_instructions(src_instr, dst_instr):
+                    # self.address_map.add_mapping(src_addr=src_instr.address, dst_addr=dst_instr.address)
+                    src_function.source_function.set_user_instr_highlight(
+                        src_instr.address,
+                        binja.highlight.HighlightStandardColor.GreenHighlightColor
+                    )
 
-                        if src_instr == dst_instr:
-                            src_function.source_function.set_user_instr_highlight(
-                                src_instr.address,
-                                binja.highlight.HighlightStandardColor.GreenHighlightColor
-                            )
+                    min_pairing.source_function.set_user_instr_highlight(
+                        dst_instr.address,
+                        binja.highlight.HighlightStandardColor.GreenHighlightColor
+                    )
 
-                            min_pairing.source_function.set_user_instr_highlight(
-                                dst_instr.address,
-                                binja.highlight.HighlightStandardColor.GreenHighlightColor
-                            )
+                else:
+                    print('tagging instruction diff at {}'.format(hex(src_instr.address)))
+                    tag = src_function.source_function.create_tag(diff_tt, 'Instruction differs')
+                    src_function.source_function.add_user_address_tag(src_instr.address, tag)
+                    src_function.source_function.set_user_instr_highlight(
+                        src_instr.address,
+                        binja.highlight.HighlightStandardColor.RedHighlightColor
+                    )
 
-                        else:
-                            print('tagging instruction diff at {}'.format(hex(src_instr.address)))
-                            tag = src_function.source_function.create_tag(diff_tt, 'Instruction differs')
-                            src_function.source_function.add_user_address_tag(src_instr.address, tag)
-                            src_function.source_function.set_user_instr_highlight(
-                                src_instr.address,
-                                binja.highlight.HighlightStandardColor.RedHighlightColor
-                            )
+                    min_pairing.source_function.set_user_instr_highlight(
+                        dst_instr.address,
+                        binja.highlight.HighlightStandardColor.RedHighlightColor
+                    )
 
-                            min_pairing.source_function.set_user_instr_highlight(
-                                dst_instr.address,
-                                binja.highlight.HighlightStandardColor.RedHighlightColor
-                            )
-
-
-                # basic block not found in the dest binary
-                except ValueError:
-                    print('tagging basic block diff at {}...'.format(hex(src_bb.address)))
-                    tag = src_function.source_function.create_tag(diff_tt, 'Basic block differs')
-                    src_function.source_function.add_user_address_tag(src_function.address, tag)
-                    for instr in src_bb.source_block:
-                        src_function.source_function.set_user_instr_highlight(
-                            instr.address,
-                            binja.highlight.HighlightStandardColor.RedHighlightColor
-                        )
         print('finished diffing')
 
     def get_min_pair(self, function: functionTypes.FunctionWrapper, pairings: List[functionTypes.FunctionWrapper]) -> Tuple[functionTypes.FunctionWrapper, float]:
