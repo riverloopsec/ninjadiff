@@ -72,7 +72,6 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                             )
 
                         else:
-                            print('{} != {}'.format(src_instr, dst_instr))
                             print('tagging instruction diff at {}'.format(hex(src_instr.address)))
                             tag = src_function.source_function.create_tag(diff_tt, 'Instruction differs')
                             src_function.source_function.add_user_address_tag(src_instr.address, tag)

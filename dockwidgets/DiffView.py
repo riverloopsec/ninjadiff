@@ -133,13 +133,14 @@ class DiffView(QWidget, View):
 		function = self.src_bv.get_function_at(addr)
 		function_addr = None if function is None else function.start
 		if function_addr is not None:
-			self.src_editor.navigate(function_addr)
+			navigate_status = self.src_editor.navigate(function_addr)
 
 			dst_addr = self.address_map.src2dst(function_addr)
 			if dst_addr is not None:
 				self.dst_editor.navigate(dst_addr)
-				return True
-		return False
+			# return navigate_status
+		return True
+
 	def getData(self):
 		return self.src_bv
 
