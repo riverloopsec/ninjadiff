@@ -138,7 +138,8 @@ class DiffView(QWidget, View):
 			dst_addr = self.address_map.src2dst(function_addr)
 			if dst_addr is not None:
 				self.dst_editor.navigate(dst_addr)
-
+				return True
+		return False
 	def getData(self):
 		return self.src_bv
 
