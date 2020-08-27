@@ -34,8 +34,8 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
         # attempt to match destination functions to source functions
         for src_function in src_functions:
-            print('diffing {}'.format(src_function.source_function.name))
             min_pairing, distance = self.get_min_pair(src_function, dst_functions)
+            print('diffing {} against {}'.format(src_function.source_function.name, min_pairing.source_function.name))
 
             # if pairing failed (ie. no similar functions in the dest binary), assume it is not present in dest
             if min_pairing is None:
@@ -52,7 +52,6 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
             # attempt to build a mapping between addresses in the source and destination binaries
             self.address_map.add_mapping(src_addr=src_function.address, dst_addr=min_pairing.address)
-            print('{} -> {}'.format(hex(src_function.address), hex(min_pairing.address)))
             src_instrs = list(src_function.source_function.hlil.instructions)
             dst_instrs = list(min_pairing.source_function.hlil.instructions)
             for instr_index in range(min(len(src_instrs), len(dst_instrs))):
@@ -60,7 +59,6 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
                 dst_instr = dst_instrs[instr_index]
 
                 if instructionComparator.compare_instructions(src_instr, dst_instr):
-                    # self.address_map.add_mapping(src_addr=src_instr.address, dst_addr=dst_instr.address)
                     src_function.source_function.set_user_instr_highlight(
                         src_instr.address,
                         binja.highlight.HighlightStandardColor.GreenHighlightColor
@@ -73,6 +71,7 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
 
                 else:
                     print('tagging instruction diff at {}'.format(hex(src_instr.address)))
+                    self.address_map.add_mapping(src_addr=src_instr.address, dst_addr=dst_instr.address)
                     tag = src_function.source_function.create_tag(diff_tt, 'Instruction differs')
                     src_function.source_function.add_user_address_tag(src_instr.address, tag)
                     src_function.source_function.set_user_instr_highlight(

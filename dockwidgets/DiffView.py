@@ -5,7 +5,7 @@ import re
 
 import binaryninjaui
 from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin
-from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView
+from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView, DockHandler
 
 from . import ControlsWidget
 from .. import diff
@@ -138,8 +138,13 @@ class DiffView(QWidget, View):
 			dst_addr = self.address_map.src2dst(function_addr)
 			if dst_addr is not None:
 				self.dst_editor.navigate(dst_addr)
-				return True
-		return False
+
+		dh = DockHandler.getActiveDockHandler()
+		vf = dh.getViewFrame()
+		vf.setViewType('Diff:' + self.src_bv.view_type)
+		return True
+
+
 	def getData(self):
 		return self.src_bv
 
