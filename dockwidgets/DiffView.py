@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLa
 import re
 
 import binaryninjaui
-from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin
+from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin, Function
 from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView, DockHandler
 
 from . import ControlsWidget
@@ -128,6 +128,9 @@ class DiffView(QWidget, View):
 		self.update_timer.setInterval(200)
 		self.update_timer.setSingleShot(False)
 		self.update_timer.timeout.connect(lambda: self.updateTimerEvent())
+
+	def goToReference(self, func: Function, source: int, target: int):
+		return self.navigate(func.start)
 
 	def navigateToFunction(self, func, offset):
 		return self.navigate(offset)
