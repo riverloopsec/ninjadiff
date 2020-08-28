@@ -129,20 +129,21 @@ class DiffView(QWidget, View):
 		self.update_timer.setSingleShot(False)
 		self.update_timer.timeout.connect(lambda: self.updateTimerEvent())
 
+	def navigateToFunction(self, func, offset):
+		return self.navigate(offset)
+
 	def navigate(self, addr):
 		function = self.src_bv.get_function_at(addr)
 		function_addr = None if function is None else function.start
 		if function_addr is not None:
-			self.src_editor.navigate(function_addr)
+			status = self.src_editor.navigate(function_addr)
 
 			dst_addr = self.address_map.src2dst(function_addr)
 			if dst_addr is not None:
 				self.dst_editor.navigate(dst_addr)
+			return status
 
-		dh = DockHandler.getActiveDockHandler()
-		vf = dh.getViewFrame()
-		vf.setViewType('Diff:' + self.src_bv.view_type)
-		return True
+		return False
 
 
 	def getData(self):
