@@ -35,7 +35,8 @@ class BackgroundDiffer(binja.BackgroundTaskThread):
         # attempt to match destination functions to source functions
         for src_function in src_functions:
             min_pairing, distance = self.get_min_pair(src_function, dst_functions)
-            print('diffing {} against {}'.format(src_function.source_function.name, min_pairing.source_function.name))
+            if min_pairing is not None:
+                print('diffing {} against {}'.format(src_function.source_function.name, min_pairing.source_function.name))
 
             # if pairing failed (ie. no similar functions in the dest binary), assume it is not present in dest
             if min_pairing is None:
