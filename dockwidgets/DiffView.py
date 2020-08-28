@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLa
 import re
 
 import binaryninjaui
-from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin
+from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin, Function
 from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView, DockHandler
 
 from . import ControlsWidget
@@ -129,20 +129,24 @@ class DiffView(QWidget, View):
 		self.update_timer.setSingleShot(False)
 		self.update_timer.timeout.connect(lambda: self.updateTimerEvent())
 
+	def goToReference(self, func: Function, source: int, target: int):
+		return self.navigate(func.start)
+
+	def navigateToFunction(self, func, offset):
+		return self.navigate(offset)
+
 	def navigate(self, addr):
 		function = self.src_bv.get_function_at(addr)
 		function_addr = None if function is None else function.start
 		if function_addr is not None:
-			self.src_editor.navigate(function_addr)
+			status = self.src_editor.navigate(function_addr)
 
 			dst_addr = self.address_map.src2dst(function_addr)
 			if dst_addr is not None:
 				self.dst_editor.navigate(dst_addr)
+			return status
 
-		dh = DockHandler.getActiveDockHandler()
-		vf = dh.getViewFrame()
-		vf.setViewType('Diff:' + self.src_bv.view_type)
-		return True
+		return False
 
 
 	def getData(self):
