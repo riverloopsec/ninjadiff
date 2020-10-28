@@ -2,6 +2,7 @@ from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLabel
 
 import re
+import os
 
 import binaryninjaui
 from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin, Function
@@ -15,6 +16,7 @@ major = int(major)
 minor = int(minor)
 buildid = int(buildid) if buildid is not None else 0xffffffff
 
+
 class DiffView(QWidget, View):
 	def __init__(self, parent, data):
 		if not type(data) == BinaryView:
@@ -27,6 +29,9 @@ class DiffView(QWidget, View):
 
 		# open secondary file and begin non-blocking analysis
 		self.dst_bv: BinaryView = BinaryViewType.get_view_of_file(fname, update_analysis=False)
+		if self.dst_bv is None:
+			raise Exception('invalid file path')
+
 		self.dst_bv.update_analysis()
 
 		# begin diffing process in background thread
