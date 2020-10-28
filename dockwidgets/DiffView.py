@@ -40,7 +40,6 @@ class DiffView(QWidget, View):
 		self.address_map = differ.address_map
 
 		QWidget.__init__(self, parent)
-		self.controls = ControlsWidget.DebugControlsWidget(self, "Controls", data)
 		View.__init__(self)
 
 		self.setupView(self)
@@ -65,58 +64,11 @@ class DiffView(QWidget, View):
 		self.is_navigating_history = False
 		self.memory_history_addr = 0
 
-		# TODO: Handle these and change views accordingly
-		# Currently they are just disabled as the DisassemblyContainer gets confused
-		# about where to go and just shows a bad view
-		self.src_editor.actionHandler().bindAction("View in Hex Editor", UIAction())
-		self.src_editor.actionHandler().bindAction("View in Linear Disassembly", UIAction())
-		self.src_editor.actionHandler().bindAction("View in Types View", UIAction())
-
-		self.dst_editor.actionHandler().bindAction("View in Hex Editor", UIAction())
-		self.dst_editor.actionHandler().bindAction("View in Disassembly Graph", UIAction())
-		self.dst_editor.actionHandler().bindAction("View in Types View", UIAction())
-
 		small_font = QApplication.font()
 		small_font.setPointSize(11)
 
-		bv_layout = QVBoxLayout()
-		bv_layout.setSpacing(0)
-		bv_layout.setContentsMargins(0, 0, 0, 0)
-
-		bv_label = QLabel("Loaded File")
-		bv_label.setFont(small_font)
-		bv_layout.addWidget(bv_label)
-		bv_layout.addWidget(self.src_editor)
-
-		self.bv_widget = QWidget()
-		self.bv_widget.setLayout(bv_layout)
-
-		disasm_layout = QVBoxLayout()
-		disasm_layout.setSpacing(0)
-		disasm_layout.setContentsMargins(0, 0, 0, 0)
-
-		disasm_label = QLabel("Raw Disassembly at PC")
-		disasm_label.setFont(small_font)
-		disasm_layout.addWidget(disasm_label)
-		disasm_layout.addWidget(self.binary_text)
-
-		self.disasm_widget = QWidget()
-		self.disasm_widget.setLayout(disasm_layout)
-
-		memory_layout = QVBoxLayout()
-		memory_layout.setSpacing(0)
-		memory_layout.setContentsMargins(0, 0, 0, 0)
-
-		memory_label = QLabel("")
-		memory_label.setFont(small_font)
-		memory_layout.addWidget(memory_label)
-		memory_layout.addWidget(self.dst_editor)
-
-		self.memory_widget = QWidget()
-		self.memory_widget.setLayout(memory_layout)
-
-		self.splitter.addWidget(self.bv_widget)
-		self.splitter.addWidget(self.memory_widget)
+		self.splitter.addWidget(self.src_editor)
+		self.splitter.addWidget(self.dst_editor)
 
 		# Equally sized
 		self.splitter.setSizes([0x7fffffff, 0x7fffffff])
@@ -124,7 +76,6 @@ class DiffView(QWidget, View):
 		layout = QVBoxLayout()
 		layout.setContentsMargins(0, 0, 0, 0)
 		layout.setSpacing(0)
-		layout.addWidget(self.controls)
 		layout.addWidget(self.splitter, 100)
 		self.setLayout(layout)
 
