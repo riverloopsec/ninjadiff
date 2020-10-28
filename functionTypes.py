@@ -11,6 +11,7 @@ from typing import List, Dict
 
 from .hashashin.lsh import brittle_hash
 
+
 class BasicBlockWrapper:
     def __init__(self, bb: HighLevelILBasicBlock, bb_hash: str):
         self.address: int = bb.start + bb.function.start

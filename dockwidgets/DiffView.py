@@ -8,7 +8,6 @@ import binaryninjaui
 from binaryninja import BinaryView, core_version, interaction, BinaryViewType, plugin, Function
 from binaryninjaui import View, ViewType, UIAction, LinearView, ViewFrame, TokenizedTextView, DockHandler
 
-from . import ControlsWidget
 from .. import diff
 
 (major, minor, buildid) = re.match(r'^(\d+)\.(\d+)\.?(\d+)?', core_version()).groups()
