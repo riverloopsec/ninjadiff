@@ -1,0 +1,3 @@
+[submodule "hashashin"]
+	path = hashashin
+	url = git@github.com:riverloopsec/hashashin.git
