@@ -1,11 +1,9 @@
-# BinjaDiff
+# NinjaDiff
 
-A binary diffing plugin for Binary Ninja
-
+NinjaDiff is a binary diffing plugin for Binary Ninja. It aims to graphically display changes in differing binary executables.
 
 
 This plugin uses [Hashashin](https://github.com/riverloopsec/hashashin) as a niave metric for binary similarity.  First, these hashes are used in conjunction with a graph similarity based approach to "align" similar functions accross binaries, then High Level IL instructions are compared line by line to give more granular information about subtle differences between the two binaries.
-
 
 
 ### Installation
