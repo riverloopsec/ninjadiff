@@ -1,6 +1,6 @@
 # NinjaDiff
 
-NinjaDiff is a binary diffing plugin for Binary Ninja. It aims to graphically display changes in differing binary executables.
+NinjaDiff is a binary diffing plugin for Binary Ninja. It aims to graphically display changes in differing binary executables. Check out our [blog post](https://www.riverloopsecurity.com/blog/2021/02/binary-diffing/) to read more about it's design!
 
 
 This plugin uses [Hashashin](https://github.com/riverloopsec/hashashin) as a niave metric for binary similarity.  First, these hashes are used in conjunction with a graph similarity based approach to "align" similar functions accross binaries, then High Level IL instructions are compared line by line to give more granular information about subtle differences between the two binaries.
@@ -9,6 +9,8 @@ This plugin uses [Hashashin](https://github.com/riverloopsec/hashashin) as a nia
 ### Installation
 
 Copy the contents of this repository into your Binary Ninja plugin directory (`Tools`--> `Open Plugin Folder...` in Binary Ninja)
+
+The easiest way to do this is with `git clone --recursive …`, take care to ensure that the [Hashashin](https://github.com/riverloopsec/hashashin) sub-module get's pulled along with the rest of the repository, otherwise NinjaDiff will not function correctly. 
 
 
 
