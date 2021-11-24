@@ -1,4 +1,4 @@
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 from binaryninja.plugin import PluginCommand
 from binaryninja import execute_on_main_thread_and_wait
 from binaryninjaui import DockHandler, ViewType
