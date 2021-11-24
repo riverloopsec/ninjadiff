@@ -1,5 +1,5 @@
-from PySide2.QtCore import Qt, QTimer
-from PySide2.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLabel
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget, QSplitter, QLabel
 
 import re
 import os
@@ -23,7 +23,7 @@ class DiffView(QWidget, View):
 
 		self.src_bv: BinaryView = data
 
-		fname = interaction.get_open_filename_input('File to Diff:').decode('utf-8')
+		fname = interaction.get_open_filename_input('File to Diff:')
 		print('opening {}...'.format(fname))
 
 		# open secondary file and begin non-blocking analysis
